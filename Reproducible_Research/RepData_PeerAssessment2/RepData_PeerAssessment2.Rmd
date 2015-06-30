@@ -1,0 +1,220 @@
+---
+title: "The Impact of Severe Weather Events to Public Health and Economic Problems for Communities and Municipalities"
+output: 
+  html_document:
+    pandoc_args: [
+      "+RTS", "-K64m",
+      "-RTS"
+    ]
+---
+
+# Synopsis
+
+By analyzing the NOAA data, we found:   
+1. Across the United States, "Tornado" is most harmful with respect to population health;  
+2. Across the United States, "Storm Surge", "Hurricane Typhoon" and "Tornado" have the greatest economic consequences.
+
+# Introduction
+
+*The text in this document are partially from Reproducible Research [Peer Assessment 2](https://class.coursera.org/repdata-015/human_grading/view/courses/973516/assessments/4/submissions) to help the peer assessment.*
+
+"Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage."
+
+In particular, this project is trying to answer the following two questions.   
+1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?  
+2. Across the United States, which types of events have the greatest economic consequences?
+
+# Data Processing
+
+The data ([Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) [47Mb]) come in the form of a comma-separated-value file compressed via the bzip2 algorithm to reduce its size.
+
+National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+and National Climatic Data Center Storm Events [FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+are some documentation of the database available. 
+
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+
+```{r}
+# Load the libraries
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(ggplot2))
+```
+
+```{r echo=TRUE}
+# Download the file if it does not exist
+if (!file.exists("repdata-data-StormData.csv")) {
+  if (!file.exists("repdata-data-StormData.csv.bz2")) {
+    url="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+    download.file(url, destfile="repdata-data-StormData.csv.bz2", method="curl")
+    dateDownloaded <- date()
+  } else {
+    unzip("repdata-data-StormData.csv.bz2")
+  }
+}
+```
+
+Let's load and subset the data.
+```{r load-data, cache=TRUE}
+# Load the csv data file
+df <- read.csv("repdata-data-StormData.csv", na.strings = c("", " ", "NA", "NaN"), stringsAsFactors = FALSE)
+columns <- c("BGN_DATE", "STATE", "EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")
+df_subset  <- df[columns]
+```
+
+```{r echo=FALSE}
+# NOAA_data = read.csv(bzfile('StormData.csv.bz2'))
+```
+
+## Tidy the data.
+1. Remove non-US territory.
+```{r dependson='load-data'}
+st <- c(state.abb, "DC")
+df_subset_0  <- df_subset[df_subset$STATE %in% st,]
+```
+
+2. Remove the data contains "Summary ..." in "EVTYPE" column.
+```{r}
+df_subset_0  <- df_subset_0[!grepl("Summary",df_subset$EVTYPE),]
+```
+
+3. Select the data when there is either death, injuries, property damage, or crop damage.
+```{r}
+df_subset_0  <- subset(df_subset_0, FATALITIES>0 | INJURIES>0 | PROPDMG>0 | CROPDMG>0)
+```
+
+4. Remove the EVTYPE marked as "?".
+```{r}
+df_subset_0<- df_subset_0[!grepl("\\?",df_subset_0$EVTYPE),]
+```
+    
+5. Trim the "EVTYPE" by, for example, removing the leading or trailing white space, and keep single space if there are multiple ones. Replace "/" by " ", etc.
+```{r subset_0, cache=TRUE}
+df_subset_0$EVTYPE <- toupper(df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("\\/"        , " ", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("\\&|-"      , "" , df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("^\\s+|\\s+$", "" , df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("\\s+"       , " ", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub(","          , "" , df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("\\(|\\)"    , "" , df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("\\\\"       , " ", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("WINDS"      , "WIND", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("STORMS"     , "STORM", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("FIRES"      , "FIRE", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("WILDFIRE"   , "WILD FIRE", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("TORNADOES"  , "TORNADO", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("SQUALLS"    , "SQUALL", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("WINDCHILL"  , "WIND CHILL", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("AVALANCE"    ,"AVALANCHE",df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("FLOODS|FLOODING", "FLOOD", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("WATERSPOUTTORNADO", "WATERSPOUT TORNADO", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("TSTM|THUDERSTORM|THUNDEERSTORM|THUNDERSNOW|THUNDERESTORM|TUNDERSTORM|THUNDERTORM|THUNERSTORM", "THUNDERSTORM", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("THUNDERSTORMWIND", "THUNDERSTORM WIND", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("THUNDERSTORMW", "THUNDERSTORM WIND",df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("WINS|WINDS|WIND\\.", "WIND", df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("FLOOD FLOOD","FLOOD",df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("FLOOD FLASH","FLASH FLOOD",df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("FLOODFLODD","FLOOD",df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("WINTRY","WINTER",df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("WINDHALL","WIND",df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("FLOODS|FLOODING","FLOOD",df_subset_0$EVTYPE)
+df_subset_0$EVTYPE <- gsub("LAKEEFFECT","LAKE EFFECT",df_subset_0$EVTYPE)
+```
+
+The dataset can be further aggregated to 48 categories according to the "NATIONAL WEATHER SERVICE INSTRUCTION"", but for this assignment, the idea is more important.
+```{r echo=FALSE}
+# Examine the data
+# head(df_subset_0)
+# tail(df_subset_0)
+# summary(df_subset_0)
+# str(df_subset_0)
+# unique(df_subset_0$PROPDMGEXP)
+# unique(df_subset_0$CROPDMGEXP)
+# unique(sort(df_subset_0$EVTYPE))
+# unique(df_subset_0$STATE)
+```
+
+Let's sort/order the data regarding the death/injury.
+Let us first creat a new variable by combing the fatality and injury.
+```{r dependson='subset_0'}
+df_subset_0$fatality_injury <- as.numeric(df_subset_0$FATALITIES) + as.numeric(df_subset_0$INJURIES)
+df_subset_0$EVTYPE <- as.factor(df_subset_0$EVTYPE)
+df_subset_1 <- group_by(df_subset_0, EVTYPE)
+df_subset_2 <- summarize(df_subset_1, sum_fatality_injury=sum(fatality_injury))
+```
+
+# Results
+
+**The following table and figure shows that "Tornado" is most harmful with respect to population health which caused almost 100,000 dealth and injuries.**
+```{r}
+df_subset_2 <- df_subset_2[order(-df_subset_2$sum_fatality_injury),]
+setnames(df_subset_2, names(df_subset_2),c("Weather_Event_Type", "Number_of_Fatality_and_Injury"))
+```
+
+```{r}
+df_num <- matrix(1:10,ncol=1,byrow=TRUE)
+df_num <- as.data.frame(df_num)
+df_subset_2 <- cbind(df_num, df_subset_2[1:10,])
+g <- ggplot(df_subset_2, aes(x=V1, y=Number_of_Fatality_and_Injury, colour=Weather_Event_Type, group=Weather_Event_Type)) + geom_line() + geom_point() + labs(x="",y="Number of Fatality and Injury")
+print (g)
+```
+In principle, we can combine "HEAT" and "EXCESSIVE HEAT" in one category, but I think what we have is good enough for this project.
+
+```{r echo=FALSE}
+#with(df_subset_2, {
+#        plot(Number_of_Fatality_and_Injury~N, xlab="", ylab="Fatalities and Injuries", type="n")
+#        points(N, Number_of_Fatality_and_Injury, pch = 16, col = "red")
+#        lines(N, Number_of_Fatality_and_Injury,  col = "blue")
+#        text(N+0.05, Number_of_Fatality_and_Injury+10,labels=as.character(df_subset_2$Weather_Event_Type))
+#})
+# Order the data table in decending order
+#df_subset_health_impact <- df_subset_0[order(-fatality_injury),]
+#df_subset_health_impact <- df_subset_health_impact[1:10,]
+#df_subset_health_impact$year <- as.Date(strptime(df_subset_health_impact$BGN_DATE, format = "%m/%d/%Y %H:%M:%S"))
+#df_subset_health_impact[,c("year","STATE","fatality_injury","EVTYPE"),with=FALSE]
+#df_subset_health_impact  <- df_subset_health_impact[order(as.Date(as.character(df_subset_health_impact$year),format="%Y"))]
+#with(df_subset_health_impact, {
+#        plot(fatality_injury~year, xlab="Year", ylab="Fatalities and Injuries", type="n")
+#        points(year, fatality_injury, pch = 16, col = "red")
+#        lines(year, fatality_injury,  col = "blue")
+#})
+```
+
+The following will calculate the property and crop damagae.
+```{r}
+df_subset_0[is.na(df_subset_0)] <- 0
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP %in% c('','-','?','+','0')] <- 1
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP == '1'] <- 10
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP %in% c('h','H','2')] <- 100 
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP %in% c('k','K','3')] <- 1000
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP == '4'] <- 1e4
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP == '5'] <- 1e5  
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP %in% c('m','M','6')] <- 1e6
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP == '7'] <- 1e7 
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP == '8'] <- 1e8 
+df_subset_0$PROPDMGEXP[df_subset_0$PROPDMGEXP == 'B'] <- 1e9
+df_subset_0$PROPDMGEXP <- as.numeric(df_subset_0$PROPDMGEXP)
+df_subset_0$CROPDMGEXP <- as.numeric(df_subset_0$CROPDMGEXP)
+df_subset_0$Total_Damage <- df_subset_0$PROPDMG*df_subset_0$PROPDMGEXP/1e9 + df_subset_0$CROPDMG*df_subset_0$CROPDMGEXP/1e9
+
+df_subset_1 <- group_by(df_subset_0, EVTYPE)
+df_subset_2 <- summarize(df_subset_1, Sum_Total_Damage=sum(Total_Damage,na.rm=TRUE))
+df_subset_2 <- df_subset_2[order(-df_subset_2$Sum_Total_Damage),]
+setnames(df_subset_2, names(df_subset_2),c("Weather_Event_Type", "Total_Damage"))
+```
+
+**The following table and figure shows that "Storm Surge", "Hurricane Typhoon" and "Tornado" are most harmful with respect to economic consequences.**
+```{r}
+df_subset_2 <- cbind(df_num, df_subset_2[1:10,])
+df_subset_2[1:10,]
+g <- ggplot(df_subset_2, aes(x=V1, y=Total_Damage, colour=Weather_Event_Type, group=Weather_Event_Type)) + geom_line() + geom_point() + labs(x="",y="Total Damage ($ B)")
+print (g)
+```
+
+# Conclusions
+By analyzing the NOAA data, we found the following conclusions:   
+1. Across the United States, Tornado is most harmful with respect to population health. 
+2. Across the United States, "Storm Surge", "Hurricane Typhoon" and "Tornado" have the greatest economic consequences.
+
