@@ -1,0 +1,65 @@
+---
+title: "Central Limit Therem Demonstration using Exponetial Distribution"
+author: "Xinchun Tian"
+subtitle: Statistical Inference Course Project
+output: pdf_document
+---
+
+# Overview
+According to the Central Limit Theorem (CLT), given sufficiently large number of sample statistics with independent random variables, both the sample mean and variance, will be approximately normally distributedn. The sample mean is the estimate of the population mean, and the sample variance is the estimate of the popluation variance. The distribution used to demonstrate the CLT in this document is the exponential distribution: $y=e^{-x}$.
+
+# Generate the data sample
+```{r}
+nosim  <- 1000 # number of simulations
+n      <- 40   # sample size
+lambda <- 0.2  # lambda
+set.seed(1)    # set the seed for the first simulation
+matrix_exp <- matrix(rexp(n,lambda),1) # simulate the first sample (first row)
+# simulate the next 999 samples and merge them as one data frame
+for (i in 2:nosim) {
+  set.seed(i)
+  tmp  <- matrix(rexp(n,lambda),1)
+  matrix_exp <- rbind(matrix_exp, tmp)
+}
+df_exp <- as.data.frame(matrix_exp)
+```
+
+The generated data set is a 1000 $\times$ 40 dimension data frame. Each row is one sample statistic with the size of 40.
+```{r}
+dim(df_exp)
+```
+
+Here shows the first few rows of the simulated data set.
+```{r}
+df_exp[1:2,]
+```
+
+## Let's plot the sample statistics on the sample mean.
+```{r}
+x    <- apply(df_exp, 1, mean)
+h    <- hist(x, breaks=40, col="lightblue", xlab="Sample Mean", 
+             main="Sample Mean vs. Theoretical Mean")
+xfit <- seq(min(x), max(x), length=nosim) 
+yfit <- dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="blue", lwd=2)
+abline(v=1/lambda, col="purple", lwd=3)
+x_mean <- mean(x)
+```
+
+1. **The plot shows that the sample statistic has a bell shape which is consistent with the the gaussian density curve in blue with the mean (`r round(x_mean,2)`) where the theoretical mean of the population distribution is 5.0 as the purple vertical line shows. With sufficient sample statistics, the sample mean is a good estimate of the population mean.**
+
+## Let's plot the sample statistics on the sample variance.
+```{r}
+x    <- apply(df_exp, 1, var)
+h    <- hist(x, breaks=40, col="lightblue", xlab="Sample Variance", 
+             main="Sample Variance vs. Theoretic Variance")
+xfit <- seq(min(x), max(x), length=nosim) 
+yfit <- dnorm(xfit, mean=mean(x), sd=sd(x))
+yfit <- yfit*diff(h$mids[1:2])*length(x)
+lines(xfit, yfit, col="blue", lwd=2)
+abline(v=(1/lambda)^2, col="purple", lwd=3)
+# d <- density(x)
+x_sd <- mean(x)
+```
+2. **The plot shows that the variance of the sample statistic has a skewed bell shape (the blue curve is the gaussian density distribution) with the mean (`r round(x_sd,2)`) where the theoretical variance of the population distribution is 25.0 as the purple vertical line shows. More sample statistics may be needed to better estimate the population variance.**
