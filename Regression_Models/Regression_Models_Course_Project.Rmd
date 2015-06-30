@@ -1,0 +1,82 @@
+---
+title: "Automatic vs Manual Transmission on MPG"
+author: "Xinchun Tian"
+subtitle: Regression Models Course Project
+output: pdf_document
+---
+
+# Context
+
+*Exerpt from [Regression Models Course Project](https://class.coursera.org/regmods-015/human_grading/view/courses/973534/assessments/4/submissions).*
+
+Suppose I work for Motor Trend, a magazine about the automobile industry. I was asked to Look at a data set of a collection of cars in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome), particularly interested in answering the following two questions:  
+1. Is an automatic or manual transmission better for MPG?  
+2. Quantify the MPG difference between automatic and manual transmissions.
+
+# Let's load the "mtcars"" data and examine the first couple of rows.
+```{r}
+library(datasets)
+data(mtcars)
+head(mtcars)
+```
+
+The data look clean and there are no missing values as checked by "is.na"" is `r sum(is.na(mtcars))`. 
+
+The "am" column tells one car is automatic (0) or manual (1).
+```{r}
+autocars           <- mtcars[mtcars$am==0,]
+manualcars         <- mtcars[mtcars$am==1,]
+autocars_mpgmean   <- mean(autocars$mpg)
+autocars_mpgvar    <- var(autocars$mpg)
+manualcars_mpgmean <- mean(manualcars$mpg)
+manualcars_mpgvar  <- var(manualcars$mpg)
+n1                 <- dim(autocars)[1]
+n2                 <- dim(manualcars)[1]
+```
+
+The automatic and manual samples are independent samples. The MPG mean and variance for automatic and manual cars are $\bar{X}_{automatic}$=`r round(autocars_mpgmean,2)`, $s^2_{automatic}$=`r round(autocars_mpgvar,2)`, $\bar{X}_{manual}$=`r round(manualcars_mpgmean,2)`, $s^2_{manual}$=`r round(manualcars_mpgvar,2)`. There are `r n1` cars in automatic sample, and `r n2` cars in manual sample.
+
+The pooled variance estimator and standard deviation estimator can be calculated as
+```{r}
+vp <- (autocars_mpgvar*(n1-1) + manualcars_mpgvar*(n2-1))/(n1+n2-2)
+sp <- sqrt(vp)
+```
+which are `r round(vp,2)` and `r round(sp,2)`.
+
+The 95% confidence MPG interval of (manual - automatic) can be caluclated as:
+```{r}
+interval <- manualcars_mpgmean - autocars_mpgmean + 
+            c(-1,1) * qt(0.975, n1+n2-2) * sp * (1/n1 + 1/n2)^0.5
+```
+Because the interval [`r round(interval,2)`] is entirely above zero, therefore the **conclusion is that manual transmission is better for MPG**.
+
+
+Consider the linear model
+\begin{equation}
+Y_i = \beta_0 + X_{i1}\beta_1 + \epsilon_i,
+\end{equation}
+where each $X_{i1}$ is either automatic (0) or manual (1) so that
+it is a 1 if measurement $i$ is in manual group and 0 in automatic group.
+Let us use the linear model fit to quantify the change in means between the automatic
+and manual groups. The automatic group is chosen as the reference category.
+```{r}
+summary(lm(mpg~am, data=mtcars))$coef
+```
+**The above table shows that the coefficient for "am" which is 7.24 is the estimated increase in MPG from group 0 or automatic to group 1 or manual.** The following plot shows the comparison of the means with 1 standard deviation intervals for automatic (black) and manual (red).
+
+```{r echo=FALSE}
+mpgmean       <- c(autocars_mpgmean, manualcars_mpgmean)
+mpgsd         <- c(sqrt(autocars_mpgvar), sqrt(manualcars_mpgvar))
+automanual    <- c("Automatic", "Manual")
+df            <- data.frame(mpgmean, mpgsd, automanual)
+df$automanual <- factor(df$automanual)
+plot(seq_along(df$mpgmean),df$mpgmean, col=df$automanual, pch=19, ylim=c(10,35),
+     xlab="Automatic or Manual", ylab="MPG", main="")
+CI.autoup     <- autocars_mpgmean + sqrt(autocars_mpgvar)
+CI.autodn     <- autocars_mpgmean - sqrt(autocars_mpgvar)
+arrows(1.0,CI.autoup,1.0,CI.autodn,code=3,length=0.2,angle=90,col='black')
+CI.manualup   <- manualcars_mpgmean + sqrt(manualcars_mpgvar)
+CI.manualdn   <- manualcars_mpgmean - sqrt(manualcars_mpgvar)
+arrows(2.0,CI.manualup,2.0,CI.manualdn,code=3,length=0.2,angle=90,col='red')
+legend("topleft",c("Automatic","Manual"),col=c("black","red"),pch=c(19,19), horiz=FALSE)
+```
