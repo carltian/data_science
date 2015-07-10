@@ -3,20 +3,20 @@ library(data.table)
 library(plyr)
 
 ## read the training and testing data set into R
-X_test        <- read.table("test/X_test.txt", header=F, stringsAsFactors=FALSE)
-y_test        <- read.table("test/y_test.txt", header=F, stringsAsFactors=FALSE)
-subject_test  <- read.table("test/subject_test.txt", header=F, stringsAsFactors=FALSE)
+X_test        <- read.table("data/test/X_test.txt", header=F, stringsAsFactors=FALSE)
+y_test        <- read.table("data/test/y_test.txt", header=F, stringsAsFactors=FALSE)
+subject_test  <- read.table("data/test/subject_test.txt", header=F, stringsAsFactors=FALSE)
 
-X_train       <- read.table("train/X_train.txt", header=F, stringsAsFactors=FALSE)
-y_train       <- read.table("train/y_train.txt", header=F, stringsAsFactors=FALSE)
-subject_train <- read.table("train/subject_train.txt", header=F, stringsAsFactors=FALSE)
+X_train       <- read.table("data/train/X_train.txt", header=F, stringsAsFactors=FALSE)
+y_train       <- read.table("data/train/y_train.txt", header=F, stringsAsFactors=FALSE)
+subject_train <- read.table("data/train/subject_train.txt", header=F, stringsAsFactors=FALSE)
 
 ## read the features and take its second column's transpose
-features <- read.table("features.txt", header=F)
+features <- read.table("data/features.txt", header=F)
 features <- t(features[2])
 
 ## read the activity labels
-activity <- read.table("activity_labels.txt", header=F)
+activity <- read.table("data/activity_labels.txt", header=F)
 
 ## give names to the data set
 names(X_test)  <- features
