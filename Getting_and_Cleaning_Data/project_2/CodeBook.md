@@ -38,15 +38,11 @@ The set of variables that were estimated from these signals are:
 
 # Data acquisition, merge, clean up, create the summary and write to the summary file
 1. Download the data from https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip, unzip it
-2. A R script called **run_analysis.R** was created to perform the following procedures
-   * Read both the 30% test sample "X_test.txt" as "testx", "y_test.txt" as "testy", and training sample "X_train.txt" as "trainx", "y_train.txt" as "trainy" into the memory.
-   * Get all the attributes by reading "features.txt"
-   * Assign the attributes' name to the data frame (testx, trainx)
-   * Subsetting the data frame with only mean and std using R regex
-   * Merge subsettted "testy" and "tesetx" as "test", "trainy" and "trainx" as "train" using **cbind**, and then merge "test" and "train" as "dt" using **rbind**
-   * Rename the data frame names by removing "()" and replace "-" by "."
-   * Rename the first column as "activity" and coerce it to be "factor" and replace by WALKING, etc instead of 1 ... 6
-   * Using group_by to break the dataset to groups according to factor "activity"
-   * Use summarise_each to get the means of all the columns
-   * Write the tidy data to "activity_tidy.txt"
+2. A R script called **run_analysis.R** was created to perform the following procedures (see the comments in the code)
+   * Read the test and train data
+   * Read the features and activity data
+   * Name the data with features
+   * Subset the data
+   * Calculate the average respect to activity and subject
+   * Write the tidy data to the disk
    
