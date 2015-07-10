@@ -41,8 +41,8 @@ merged$activity <- factor(merged$activity)
 merged$activity <- mapvalues(merged$activity, from = as.character(activity[[1]]), to = as.character(activity[[2]]))
 
 ## split and calculate the ave using pipeline operations
-sum_merged <- merged %>% group_by(activity, subject) %>% summarise_each(funs(mean))
+ave_merged <- merged %>% group_by(activity, subject) %>% summarise_each(funs(mean))
 ## please note that the split/group_by and summarise can be done by calling apply functions
 
 ## write the tidy data to tidydata.txt with a dimension of 180 x 68 
-write.table(sum_merged, file="tidydata.txt",row.names=FALSE)
+write.table(ave_merged, file="tidydata.txt",row.names=FALSE)
