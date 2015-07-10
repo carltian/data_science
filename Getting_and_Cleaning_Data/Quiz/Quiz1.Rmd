@@ -1,0 +1,65 @@
+---
+title: "Getting and Cleaning Data Quiz"
+author: Xinchun Tian
+output: html_document
+---
+
+## Questioin 1.
+```{r}
+library(data.table)
+url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv"
+if (!file.exists("ss06hid.csv")) {
+    download.file(url, destfile = "/Users/tianxc/repo/git/data_science/Getting_and_Cleaning_Data/Quiz/ss06hid.csv", method="curl")
+}
+dt <- read.table("ss06hid.csv", sep = ",", header = TRUE)
+dt <- dt[complete.cases(dt$VAL),]
+dt_sub <- dt[dt$VAL==24,]
+dim(dt_sub)
+```
+
+
+## Questioin 3.
+```{r}
+library(xlsx)
+url<-"https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FDATA.gov_NGAP.xlsx"
+if (!file.exists("NGAP.xlsx")) {
+    download.file(url, destfile = "/Users/tianxc/repo/git/data_science/Getting_and_Cleaning_Data/Quiz/NGAP.xlsx", method="curl")
+}
+colIndex <- 7:15
+rowIndex <- 18:23
+df <- read.xlsx("./NGAP.xlsx", sheetIndex=1, header=TRUE, colIndex = colIndex, rowIndex = rowIndex)
+sum(df$Zip*df$Ext,na.rm=T) 
+```
+
+
+## Questioin 4.
+```{r}
+library(XML)
+library(RCurl)
+fileUrl <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Frestaurants.xml"
+xData <- getURL(fileUrl)
+doc <- xmlTreeParse(xData, useInternal=TRUE)
+#rootNode <- xmlRoot(doc)
+doc <- xpathSApply(doc, "//zipcode", xmlValue)
+length(doc[doc=="21231"])
+```
+
+## Questioin 5.
+```{r}
+url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06pid.csv"
+if (!file.exists("ss06pid.csv")) {
+    download.file(url, destfile = "/Users/tianxc/repo/git/data_science/Getting_and_Cleaning_Data/Quiz/ss06pid.csv", method="curl")
+}
+DT <- fread("ss06pid.csv",sep = ",")
+#t1 <- replicate(1000, system.time(mean(DT[DT$SEX==1,]$pwgtp15); mean(DT[DT$SEX==2,]$pwgtp15)))
+# it can be done also by system.time(replicate(1000,sapply(split(DT$pwgtp15,DT$SEX),mean)))
+n <- 10
+t2 <- replicate(n, system.time(sapply(split(DT$pwgtp15,DT$SEX),mean)))
+#rowMeans(DT)[DT$SEX==1]; rowMeans(DT)[DT$SEX==2]
+#mean(DT$pwgtp15,by=DT$SEX)
+t3 <- replicate(n, system.time(DT[,mean(pwgtp15),by=SEX]))
+t4 <- replicate(n, system.time(tapply(DT$pwgtp15,DT$SEX,mean)))
+sum(t2)
+sum(t3)
+sum(t4)
+```

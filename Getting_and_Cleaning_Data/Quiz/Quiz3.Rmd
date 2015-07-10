@@ -1,0 +1,72 @@
+---
+title: "Quiz3.Rmd"
+output: 
+  html_document:
+    pandoc_args: [
+      "+RTS", "-K64m",
+      "-RTS"
+    ]
+---
+
+## Questioin 1.
+```{r}
+library(data.table)
+library(dplyr)
+url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv"
+if (!file.exists("ss06hid.csv")) {
+    download.file(url, destfile = "/Users/tianxc/repo/git/data_science/Getting_and_Cleaning_Data/Quiz/ss06hid.csv", method="curl")
+}
+dt <- read.table("ss06hid.csv", sep = ",", header = TRUE)
+dt1 <- dt
+
+dt$agricultureLogical <- dt$ACR==3 & dt$AGS==6
+with(dt, which(agricultureLogical))
+
+#dt1 %>% mutate(agricultureLogical=(ACR==3 & AGS==6))
+```
+
+
+## Question 2.
+```{r}
+library(jpeg)
+url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fjeff.jpg"
+if (!file.exists("jeff.jpg")) {
+    download.file(url, destfile = "/Users/tianxc/repo/git/data_science/Getting_and_Cleaning_Data/Quiz/jeff.jpg", method="curl")
+}
+img <- readJPEG("jeff.jpg", native=TRUE)
+quantile(img, probs=c(0.30, 0.80))
+```
+
+## Question 3, 4, and 5.
+```{r}
+library(plyr)
+url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FGDP.csv"
+if (!file.exists("GDP.csv")) {
+    download.file(url, destfile = "/Users/tianxc/repo/git/data_science/Getting_and_Cleaning_Data/Quiz/GDP.csv", method="curl")
+}
+url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FEDSTATS_Country.csv"
+if (!file.exists("EDSTATS_Country.csv")) {
+    download.file(url, destfile = "/Users/tianxc/repo/git/data_science/Getting_and_Cleaning_Data/Quiz/EDSTATS_Country.csv", method="curl")
+}
+gdp <- read.csv("GDP.csv", sep=",", na.strings = "")
+edu <- read.csv("EDSTATS_Country.csv", sep=",", na.strings = "")
+gdp <- gdp[5:194,]
+gdp <- rename(gdp, c("X" = "CountryCode"))
+merged <- merge(gdp, edu, by="CountryCode")
+merged$Gross.domestic.product.2012 <- as.numeric(as.character(merged$Gross.domestic.product.2012))
+merged <- merged[order(merged$Gross.domestic.product.2012,decreasing = TRUE),]
+merged[13,]
+
+str(merged)
+ddply(merged, .(Income.Group), summarize, ave=mean(merged$Gross.domestic.product.2012,FUN=ave, na.rm=T))
+result <- tapply(merged$Gross.domestic.product.2012, merged$Income.Group, ave, na.rm=T)
+result 
+merged$rankGroups <- cut(merged$Gross.domestic.product.2012, breaks=quantile(merged$Gross.domestic.product.2012, probs = seq(0, 1, 0.20)))
+merged[,c("Income.Group","rankGroups")]
+table(merged$rankGroups, merged$Income.Group)
+merged_two <- merged[,c("Gross.domestic.product.2012","Income.Group")]
+merged_three <- split(merged_two$Gross.domestic.product.2012, merged_two$Income.Group)
+str(merged_two)
+lapply(merged_three, ave)
+ddply(merged_two, .(Income.Group), summarize, ave=ave(merged_two$Gross.domestic.product.2012, na.rm=T))
+```
