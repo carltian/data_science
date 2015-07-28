@@ -1,0 +1,16 @@
+---
+title: "Exploratory Data Analysis Quiz 2"
+author: Xinchun Tian
+output: html_document
+---
+
+Some questions are so easy so not included here.
+## Question 3: The answer is D (llines())
+
+## Question 7.  
+The answer is C: 
+airquality = transform(airquality, Month = factor(Month))
+qplot(Wind, Ozone, data = airquality, facets = . ~ Month)
+
+I do not quite understand why "qplot(Wind, Ozone, data = airquality, facets = . ~ factor(Month))"
+does not work. They seem to be equivlent.
