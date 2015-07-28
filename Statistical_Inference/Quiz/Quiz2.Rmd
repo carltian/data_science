@@ -1,0 +1,38 @@
+---
+title: "Data Science Specification - Statistical Inference Quiz 2"
+output: html_document
+---
+
+1. Question 2
+```{r}
+pnorm(70, mean=80, sd=10)
+```
+
+2. Question 3
+```{r}
+1100+qnorm(0.95)*75
+```
+
+3. Question 4
+```{r}
+1100+qnorm(0.95)*75/sqrt(100)
+```
+
+4. Question 5
+```{r}
+pbinom(3, size=5, prob=0.5, lower.tail=F)
+```
+
+6. Question 6
+```{r}
+pnorm(14, mean=15, sd=10/sqrt(100), lower.tail=F) - pnorm(16, mean=15, sd=10/sqrt(100), lower.tail=F)
+```
+
+7. Question 7
+```{r}
+0.5
+```
+8. Question 8
+```{r}
+ppois(10, 5*3)
+```

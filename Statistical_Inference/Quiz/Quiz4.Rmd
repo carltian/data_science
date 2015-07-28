@@ -1,0 +1,58 @@
+---
+title: "Data Science Specification - Statistical Inference Quiz 4"
+output: html_document
+---
+
+1. Question 1
+```{r}
+baseline <- c(140, 138, 150, 148, 135)
+week2    <- c(132, 135, 151, 146, 130)
+t.test(baseline, week2, paired=TRUE)
+```
+
+2. Question 2
+```{r}
+1100 + c(-1,1)*qt(0.975, df=9-1)*30/sqrt(9)
+```
+
+3. Question 3
+```{r}
+pbinom(2,size=4, prob=0.5, lower.tail=F)
+```
+
+4. Question 4
+It is a poisson distribution.
+```{r}
+# The probability of having 10 or less infections over the last 1878 days can ben calculated as
+ppois(10, 1*(1787/100), lower.tail=T)
+```
+
+5. Question 5
+```{r}
+n1 = 9
+n2 = 9
+m1 = -3
+m2 = 1
+s1 = 1.5
+s2 = 1.8
+sp <-  sqrt(((n1-1)*s1^2+(n2-1)*s2^2)/(n1+n2-2))
+semd <- sp * sqrt(1 / n1 + 1/n2)
+t <- (m2-m1)/semd
+t
+2*pt(t,9+9-2,lower.tail=F)
+```
+
+6. Question 6  
+No you wouldn't reject.
+
+7. Question 7
+```{r}
+power.t.test(n = 100, delta = 0.01, sd=0.04, type = "one.sample",  alt = "one.sided")$power
+```
+
+8. Question 8
+```{r}
+power.t.test(power = 0.90, delta = 0.01, sd=0.04, type = "one.sample",  alt = "one.sided")$n
+```
+
+9. Question 9  

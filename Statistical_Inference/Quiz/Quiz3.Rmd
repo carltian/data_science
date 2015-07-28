@@ -1,0 +1,63 @@
+---
+title: "Data Science Specification - Statistical Inference Quiz 3"
+output: html_document
+---
+
+1. Question 1
+```{r}
+1100 + c(-1,1)*qt(0.975,df=8)*30/sqrt(9)
+```
+
+2. Question 2
+```{r}
+2*sqrt(9)/qt(0.975,df=8)
+```
+
+3. Question 3  
+A paired interval.
+
+4. Question 4
+```{r}
+n1 = 10
+n2 = 10
+s1 = 0.60
+s2 = 0.68
+sp <-  sqrt(((n1-1)*s1+(n2-1)*s2)/(n1+n2-2))
+3-5+c(-1,1)*qnorm(0.975)*sp*sqrt(1/n1+1/n2)
+```
+
+5. Question 5  
+The interval will be narrower.
+
+6. Question 6
+$$
+\bar Y - \bar X \pm t_{df} \times \left(\frac{s_x^2}{n_x} + \frac{s_y^2}{n_y}\right)^{1/2}
+$$
+where $t_{df}$ is calculated with degrees of freedom
+$$
+df=    \frac{\left(S_x^2 / n_x + S_y^2/n_y\right)^2}
+    {\left(\frac{S_x^2}{n_x}\right)^2 / (n_x - 1) +
+      \left(\frac{S_y^2}{n_y}\right)^2 / (n_y - 1)}
+$$
+
+```{r}
+n1 = 100
+n2 = 100
+m1 = 4
+m2 = 6
+s1 = 0.5
+s2 = 2
+m2 - m1 + c(-1,1)*qnorm(0.975)*sqrt(s1^2/n1+s2^2/n2)
+```
+When subtracting (old - new) the interval is entirely above zero. The new system appears to be effective.
+
+7. Question 7
+```{r}
+n1 = 9
+n2 = 9
+m1 = -3
+m2 = 1
+s1 = 1.5
+s2 = 1.8
+sp <-  sqrt(((n1-1)*s1^2+(n2-1)*s2^2)/(n1+n2-2))
+m1-m2+c(-1,1)*qt(0.95, df=n1+n2-2)*sp*sqrt(1/n1+1/n2)

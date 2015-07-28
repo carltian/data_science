@@ -1,0 +1,124 @@
+---
+title: "The Effect of Vitamin C on Tooth Growth in Guinea Pigs"
+author: "Xinchun Tian"
+subtitle: Statistical Inference Course Project 2
+output: pdf_document
+---
+
+```{r echo=FALSE}
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(dplyr))
+## Load the data
+data(ToothGrowth)
+```
+
+# Exploratory Data Analysis
+Using some simple $R$ tools to do some initial exploratory data anlysis.
+1. Show part of the data in a table (measurements 25-35)
+```{r fig.align='center', echo=FALSE}
+library(ggplot2)
+## In a table format, measurements 25-35
+grid.table(ToothGrowth[25:35,])
+## Summary using summary
+```
+
+2. Show the summary of the data using *summary*
+```{r echo=FALSE}
+summary(ToothGrowth)
+```
+
+3. Show the summary of the data using *str*
+```{r echo=FALSE}
+## Summary using str
+str(ToothGrowth)
+```
+
+4. Plot the data  
+```{r echo=FALSE}
+## Plot the scatterp plots
+# pairs(ToothGrowth, main="Scatterplot Matrix")
+g <- ggplot(ToothGrowth, aes(x=dose, y=len, colour=supp))
+g <- g + geom_point()
+g <- g + stat_smooth(method="lm")
+g <- g + xlab("Dose (mg)") + ylab("Tooth Length") + ggtitle("The Effect of Vitamin C on Tooth Growth in Guinea Pigs")
+g
+```
+
+From the above exploratory data analysis, we can have obtain the following observations about the ToothGrowth dataset.  
+1. There are 60 observations, 3 variables,  
+2. Two factors: VC and OJ.  
+According to the help page of $R$, the summary of the ToothGrowth dataset can be "*The response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid).*"
+
+
+# Two-group Confidence Intervals and Hypothesis Tests
+## Compare VC vs OJ effects at different dose levels
+There are three dose levels (0.5, 1.0 and 2.0 mg).    
+1. dose is 0.5 mg
+```{r echo=T}
+ToothGrowth_0 <- subset(ToothGrowth, dose==0.5)
+```
+The variance of len in the group of VC, `r round(var(ToothGrowth_0[ToothGrowth_0$supp=="VC",]$len), 3)`, is different from the variance of len in the group of OJ, `r round(var(ToothGrowth_0[ToothGrowth_0$supp=="OJ",]$len), 3)`, therefore the T-test will use the option of "va.equal=FALSE".
+
+```{r}
+interval <- rbind(t.test(len~I(relevel(supp,"OJ")), data=ToothGrowth_0, 
+                         var.equal=FALSE, paired=FALSE)$conf)
+```
+
+**The 95% confidence interval is [`r round(interval,3)`], which means "OJ" is more effective than "VC" on teeth growth at 0.5 mg dose level.**
+
+2. dose is 1.0 mg
+```{r echo=T}
+ToothGrowth_1 <- subset(ToothGrowth, dose==1.0)
+```
+The variance of len in the group of VC, `r round(var(ToothGrowth_1[ToothGrowth_1$supp=="VC",]$len), 3)`, is different from the variance of len in the group of OJ, `r round(var(ToothGrowth_1[ToothGrowth_1$supp=="OJ",]$len), 3)`, therefore the T-test will use the option of "va.equal=FALSE".
+
+```{r echo=T}
+interval <- rbind(t.test(len~supp, data=ToothGrowth_1, 
+                         var.equal=FALSE, paired=FALSE)$conf)
+```
+
+**The 95% confidence interval is [`r round(interval,3)`], which means "OJ" is more effective than "VC" on teeth growth at 1.0 mg dose level.**
+
+3. dose is 2.0 mg
+```{r echo=T}
+ToothGrowth_2 <- subset(ToothGrowth, dose==2.0)
+```
+The variance of len in the group of VC, `r round(var(ToothGrowth_2[ToothGrowth_2$supp=="VC",]$len), 3)`, is different from the variance of len in the group of OJ, `r round(var(ToothGrowth_2[ToothGrowth_2$supp=="OJ",]$len), 3)`, therefore the T-test will use the option of "va.equal=FALSE".
+
+```{r echo=T}
+interval <- rbind(t.test(len~supp, data=ToothGrowth_2, 
+                         var.equal=FALSE, paired=FALSE)$conf)
+```
+
+**The 95% confidence interval is [`r round(interval,3)`], which means "OJ" is not different from "VC" on teeth growth at 2.0 mg dose level.**
+
+## Compare dose effects (0.5 and 2.0 mg) at VC or OJ
+There are three dose levels (0.5, 1.0 and 2.0 mg).  
+1. supp is VC
+```{r echo=T}
+ToothGrowth_0 <- subset(ToothGrowth, supp=="VC" & (dose==0.5 | dose==2.0))
+```
+The variance of len at 0.5 mg dose, `r round(var(ToothGrowth_0[ToothGrowth_0$dose==0.5,]$len), 3)`, is different from the variance of len at 2.0 mg dose, `r round(var(ToothGrowth_0[ToothGrowth_0$dose==2.0,]$len), 3)`, therefore the T-test will use the option of "va.equal=FALSE".
+
+```{r}
+interval <- rbind(t.test(len~I(relevel(factor(dose),2)), data=ToothGrowth_0, 
+                         var.equal=FALSE, paired=FALSE)$conf)
+```
+
+**The 95% confidence interval is [`r round(interval,3)`], which means 2.0 mg dose is more effective than 0.5 mg dose on teeth growth in the group of VC.**
+
+2. supp is OJ
+```{r echo=T}
+ToothGrowth_1 <- subset(ToothGrowth, supp=="OJ" & (dose==0.5 | dose==2.0))
+```
+The variance of len at 0.5 mg dose, `r round(var(ToothGrowth_1[ToothGrowth_1$dose==0.5,]$len), 3)`, is different from the variance of len at 2.0 mg dose, `r round(var(ToothGrowth_1[ToothGrowth_1$dose==2.0,]$len), 3)`, therefore the T-test will use the option of "va.equal=FALSE".
+```{r}
+interval <- rbind(t.test(len~I(relevel(factor(dose),2)), data=ToothGrowth_1, 
+                         var.equal=FALSE, paired=FALSE)$conf)
+```
+
+**The 95% confidence interval is [`r round(interval,3)`], which means 2.0 mg dose is more effective than 0.5 mg dose on teeth growth in the group of OJ.**
+
+Similarly we can compare the dose level of 0.5 vs 1.0, 1.0 vs 2.0 within each OJ and VC group by repeating the above t-test procedures.
+
+The assumption in the above analysis is **the samples are iid and normally distributed**.
