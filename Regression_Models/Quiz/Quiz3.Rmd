@@ -1,0 +1,63 @@
+---
+title: "Data Science Specification Quiz 3"
+output: html_document
+---
+
+- Question 1
+```{r}
+data(mtcars)
+fit <- lm(mpg ~ factor(cyl) + wt, mtcars)
+summary(fit)$coef[3]
+```
+
+- Question 2
+```{r}
+data(mtcars)
+fit1 <- lm(mpg ~ factor(cyl), mtcars)
+fit2 <- lm(mpg ~ factor(cyl) + wt, mtcars)
+fit3 <- lm(mpg ~ factor(cyl) * wt, mtcars)
+summary(fit1)$coef
+summary(fit2)$coef
+summary(fit3)$coef
+```
+
+- Question 3
+```{r}
+data(mtcars)
+fit1 <- lm(mpg ~ factor(cyl) + wt, mtcars)
+fit2 <- lm(mpg ~ factor(cyl) * wt, mtcars)
+anova(fit1,fit2)
+#The P-value is larger than 0.05. So, according to our criterion, we would fail to reject, which suggests that the interaction terms may not be necessary.
+```
+
+- Question 4
+```{r}
+fit <- lm(mpg ~ I(wt * 0.5) + factor(cyl), data = mtcars)
+summary(fit)$coef
+# The estimated expected change in MPG per one ton increase in weight for a specific number of cylinders (4, 6, 8).
+# The reason why we chose this one is that cyl is the predictor.
+```
+
+- Question 5
+```{r}
+x <- c(0.586, 0.166, -0.042, -0.614, 11.72)
+y <- c(0.549, -0.026, -0.127, -0.751, 1.344)
+fit <- lm(y~x)
+round(hatvalues(fit)[1 : 5], 3)
+influence(lm(y ~ x))$hat
+## showing how it's actually calculated
+xm <- cbind(1, x)
+diag(xm %*% solve(t(xm) %*% xm) %*% t(xm))
+```
+
+- Question 6
+```{r}
+x <- c(0.586, 0.166, -0.042, -0.614, 11.72)
+y <- c(0.549, -0.026, -0.127, -0.751, 1.344)
+fit <- lm(y~x)
+round(dfbetas(fit)[1 : 5, 2], 3)
+influence.measures(lm(y ~ x))
+```
+
+- Question 7  
+It is possible for the coefficient to reverse sign after adjustment. For example, it can be strongly significant and positive before adjustment and strongly significant and negative after adjustment.

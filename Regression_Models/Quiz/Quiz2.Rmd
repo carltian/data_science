@@ -1,0 +1,81 @@
+---
+title: "Data Science Specification Quiz"
+output: html_document
+---
+
+- Question 1
+```{r}
+x <- c(0.61, 0.93, 0.83, 0.35, 0.54, 0.16, 0.91, 0.62, 0.62)
+y <- c(0.67, 0.84, 0.6, 0.18, 0.85, 0.47, 1.1, 0.65, 0.36)
+fit <- lm(y ~ x)
+summary(fit)$coefficients[2,4]
+```
+
+- Question 2
+```{r}
+x <- c(0.61, 0.93, 0.83, 0.35, 0.54, 0.16, 0.91, 0.62, 0.62)
+y <- c(0.67, 0.84, 0.6, 0.18, 0.85, 0.47, 1.1, 0.65, 0.36)
+fit <- lm(y ~ x)
+n <- length(y)
+e <- resid(fit)
+sqrt(sum(e^2)/(n-2))
+summary(fit)$sigma
+```
+
+- Question 3
+```{r}
+x <- mtcars$wt; y <- mtcars$mpg; n <- nrow(mtcars)
+fit <- lm(y ~ x)
+summary(fit)$coefficients[2,1] + c(-1,1)*qt(0.975, df = n-1)*summary(fit)$coefficients[2,2]
+newx <- data.frame(x = mean(x))
+p1 = data.frame(predict(fit, newdata = newx, interval = ("confidence")))
+p2 = data.frame(predict(fit, newdata = newx, interval = ("prediction")))
+# Here we take the confidence interval
+p1
+p2
+```
+
+- Question 4
+The estimated expected change in mpg per 1,000 lb increase in weight.
+
+- Question 5
+```{r}
+x <- mtcars$wt; y <- mtcars$mpg; n <- nrow(mtcars)
+x
+fit <- lm(y ~ x)
+newx <- data.frame(x = 3.000)
+p1 = data.frame(predict(fit, newdata = newx, interval = ("confidence")))
+p2 = data.frame(predict(fit, newdata = newx, interval = ("prediction")))
+# Here we take the prediction interval
+p1
+p2
+```
+
+- Question 6
+```{r}
+x <- mtcars$wt/2.0; y <- mtcars$mpg; n <- nrow(mtcars)
+fit <- lm(y ~ x)
+summary(fit)$coefficients[2,1] + c(-1,1)*qt(0.975, df = n-1)*summary(fit)$coefficients[2,2]
+summary(fit)$coefficients
+```
+
+- Question 7
+It would get multiplied by 100.
+
+- Question 8
+The new intercept would be β^0−cβ^1.
+$\hat{\beta}_0  = \bar{Y} - \hat{\beta}_1\bar{X}$ 
+$\hat{\beta}_0  = \bar{Y} - \hat{\beta}_1(\bar{X}+c)$
+
+- Question 9
+```{r}
+x <- mtcars$wt/2.0; y <- mtcars$mpg; n <- nrow(mtcars)
+fit1 <- lm(y ~ 1)
+fit2 <- lm(y ~ x)
+e1 <- resid(fit1)
+e2 <- resid(fit2)
+sum((e2)^2)/sum((e1)^2)
+```
+
+- Question 10
+If an intercept is included, then they will sum to 0.
