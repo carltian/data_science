@@ -1,0 +1,177 @@
+---
+title: "The Manner of People in Exercise"
+subtitle: "Practical Machine Learning Course Project"
+author: "X. C. Tian"
+output:
+    html_document:
+        keep_md: true
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+# Context
+In this project, using the personal activity data collected by devices such as Jawbone Up, Nike FuelBand, and Fitbit, from accelerometers on the belt, forearm, arm, and dumbell of 6 participants, we are going to build a model that will be used to predict which activitiy it is (A, B, C, D, or E). The data used in this analysis is from [1].
+
+```{r echo=FALSE}
+suppressPackageStartupMessages(library(AppliedPredictiveModeling))
+suppressPackageStartupMessages(library(caret))
+suppressPackageStartupMessages(library(rattle))
+suppressPackageStartupMessages(library(rpart.plot))
+suppressPackageStartupMessages(library(randomForest))
+```
+
+```{r echo=TRUE}
+# enable multi-core processing
+suppressPackageStartupMessages(library(doParallel))
+cl <- makeCluster(detectCores())
+registerDoParallel(cl)
+```
+
+# Getting and Cleaning data
+```{r}
+if (!file.exists("pml-training.csv")) {
+    url="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+    download.file(url, destfile="./pml-training.csv", method="curl")
+    dateDownloaded <- date()
+}
+if (!file.exists("pml-testing.csv")) {
+    url="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+    download.file(url, destfile="./pml-testing.csv", method="curl")
+    dateDownloaded <- date()
+}
+# read in the data sets, both training and testing
+training <- read.csv("pml-training.csv", na.strings=c("NA","","#DIV/0!"), sep=",")
+testing  <- read.csv("pml-testing.csv",  na.strings=c("NA","","#DIV/0!"), sep=",")
+# subset the data and keeps rows from 8 to the end
+training <- training[,c(8:160)]
+testing  <- testing[,c(8:160)]
+# only keep the rows with less than 50% of missing values
+col_to_keep = c()
+for (i in 1:dim(training)[2]) {
+  if ((sum(is.na(training[,i]))/nrow(training))<0.5) {
+    col_to_keep <- append(col_to_keep, i)
+  }
+}
+training <- training[,col_to_keep]
+testing  <- testing[,col_to_keep]
+
+# By looking at the fraction of NAs for each variables, it turns out there are no missing values
+num_of_NAs = 0
+for (i in 1:dim(training)[2]) {
+  num_of_NAs = num_of_NAs + (sum(is.na(training[,i]))/nrow(training))
+}
+print (paste("The total number of columns in training dataset having NAs is", num_of_NAs))
+num_of_NAs = 0
+for (i in 1:dim(testing)[2]) {
+  num_of_NAs = num_of_NAs + (sum(is.na(testing[,i]))/nrow(testing))
+}
+print (paste("The total number of columns in testing dataset having NAs is", num_of_NAs))
+```
+
+The idea is that if the fraction of missing values of a column is great than 50%, we will drop this column for downstream analysis. After the cleaning, there are 53 columns left including the outcome column "classe". A further check has been done and found no missing values in the tidy data so there is no need to impute the training and testing data set.
+
+# Exploratory Data Analysis
+See Appendix A.
+
+# Machine Learning Model Building
+## Model one: using all the variables as predictors
+We first split the training dataset into two sub-dataset, for training and validation purposes.
+```{r}
+set.seed(201500)
+inTrain    <- createDataPartition(y=training$classe, p=0.5, list=FALSE)
+training   <- training[ inTrain,]
+validation <- training[-inTrain,]
+```
+
+Using the training dataset, and 3-fold cross valiation algorithm, we fit the training dataset with Random Forest (rf) method, "classe" is the response, and using all the variables as predictors.
+```{r}
+set.seed(201501)
+model1 <- train(classe ~ ., trControl=trainControl(method = "cv", number = 3), 
+                method="rf", prox = TRUE, data = training)
+print (model1$finalModel)
+print(confusionMatrix(validation$classe, predict(model1, newdata=validation)), digits=4)
+```
+
+Apply the first model to the testing dataset.
+```{r}
+answer <- predict(model1, newdata=testing)
+print (answer)
+```
+Using all the varialbes as predictors, the model predict the testing dataset 100% correct.
+
+## Model two: pre-processing using principal components analysis
+Data can contain variables that are highly correlated with each other. Many methods may perform better if highly correlated attributes are removed [2].
+
+```{r}
+correlationMatrix       <- abs(cor(training[,-53]))
+diag(correlationMatrix) <- 0
+which(correlationMatrix>0.8, arr.ind=T)
+```
+The above shows that there are many variables are highly correlated with each other, so we will preprocess the data with PCA.
+```{r}
+set.seed(201502)
+model2 <- train(classe ~ ., preProcessing = "pca", trControl=trainControl(method = "cv", number = 3), 
+                method="rf", prox = TRUE, data = training)
+print (model2$finalModel)
+print(confusionMatrix(validation$classe, predict(model2, newdata=validation)), digits=4)
+```
+
+Apply the second model to the testing dataset.
+```{r}
+answer <- predict(model2, newdata=testing)
+print (answer)
+```
+
+## Model three: selecting features based on their ranks
+```{r}
+# estimate variable importance
+importance <- varImp(model1, scale=FALSE)
+# summarize importance
+print(importance)
+# plot importance
+plot(importance)
+```
+
+From the plot, let's use the top 10 features as the predictors.
+```{r}
+importance         <- varImp(model1)$importance
+importance$varname <- rownames(importance) 
+importance         <- importance[order(importance$Overall, decreasing=TRUE),]
+impColName         <- importance[1:10,2]
+```
+
+```{r}
+set.seed(201503)
+training_sub <- training[,c(impColName, "classe")]
+model3       <- train(classe ~ ., trControl=trainControl(method = "cv", number = 3), 
+                      method="rf", prox = TRUE, data = training_sub)
+print (model3$finalModel)
+print(confusionMatrix(validation$classe, predict(model3, newdata=validation)), digits=4)
+```
+
+Apply the third model to the testing dataset.
+```{r}
+answer<- predict(model3, newdata=testing)
+print (answer)
+```
+
+```{r}
+# The stopCluster is necessary to terminate the extra processes
+stopCluster(cl)
+```
+
+# Summary
+We constructed 3 models using Random Forest, all of them give very low out of sample error (~0%) and very high accuracy (~100%). All three models give same correct predictions on the test dataset.
+
+# References
+[1] Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.  
+[2] http://machinelearningmastery.com/feature-selection-with-the-caret-r-package/.
+
+# Appendix A
+```{r fig.align="center", fig.height=6, fig.width=8}
+par(mfrow=c(4,4))
+par(mai=c(0.6,0.6,0,0))
+tnames <- names(training)
+for (i in 1:52) {
+  hist(training[,i], xlab=tnames[i], col="lightblue", main="")
+}
+```
