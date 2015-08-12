@@ -18,6 +18,7 @@ shinyUI(pageWithSidebar(
     verbatimTextOutput("monthlyinterest"),
     h4('Principal'),
     verbatimTextOutput("monthlyprincipal"),
-    textOutput('text')
+    textOutput('text'),
+    plotOutput('plot')
   )
 ))
