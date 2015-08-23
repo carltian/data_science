@@ -1,0 +1,89 @@
+---
+title: "Human Activity Recognition"
+author: "Eng Kiat Koh"
+date: "22 August 2015"
+output: html_document
+---
+#Introduction
+
+This report outlines the process of deducing the activity performed by a human during weight lifting exercises. Their activities were classified from Class A to Class E. More information on the data set can be obtained from this paper:
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz3jX8pTADp
+
+#Dataset
+```{r, warning=FALSE}
+library(caret)
+trainingset<-read.csv('pml-training.csv')
+testingset<-read.csv('pml-testing.csv')
+```
+
+The first seven columns are information about each test case and do not help to identify the activity. They do not form the set of regressors. The data contains many NA's. In columns with NA's, the number of NA's make up 97% of the entire column. Such columns contain little useful information and are not included in the set of regressors. There are a few columns with entries "#DIV/0!". These columns are also rejected. A variable reject denotes the columns that do not form the set of regressors.
+
+```{r}
+reject<-apply(trainingset, 2, a<-function(x) { sum(is.na(x)) >=0.97* length(x) || sum(x=="#DIV/0!")>0})
+reject[1:7]<-TRUE
+#reject<-c("X", "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_timestamp", "new_window", " num_window","kurtosis_yaw_belt", "skewness_yaw_belt", "amplitude_yaw_belt", "kurtosis_yaw_dumbbell", "skewness_yaw_dumbbell", "kurtosis_yaw_forearm", "skewness_yaw_forearm", "amplitude_yaw_forearm", "max_roll_belt", "max_pitch_belt", "min_roll_belt", "min_pitch_belt", "amplitude_roll_belt", "amplitude_pitch_belt", "var_total_accel_belt", "avg_roll_belt", "stddev_roll_belt", "var_roll_belt", "avg_pitch_belt", "stddev_pitch_belt", "var_pitch_belt", "avg_yaw_belt", "stddev_yaw_belt", "var_yaw_belt", "var_accel_arm", "avg_roll_arm", "stddev_roll_arm", "var_roll_arm", "avg_pitch_arm", "stddev_pitch_arm", "var_pitch_arm", "avg_yaw_arm", "stddev_yaw_arm", "var_yaw_arm", "max_roll_arm", "max_pitch_arm", "max_yaw_arm", "min_roll_arm", "min_pitch_arm", "min_yaw_arm", "amplitude_roll_arm", "amplitude_pitch_arm", "amplitude_yaw_arm", "max_roll_dumbbell", "max_pitch_dumbbell", "min_roll_dumbbell", "min_pitch_dumbbell", "amplitude_roll_dumbbell", "amplitude_pitch_dumbbell", "var_accel_dumbbell", "avg_roll_dumbbell", "stddev_roll_dumbbell", "var_roll_dumbbell", "avg_pitch_dumbbell", "stddev_pitch_dumbbell", "var_pitch_dumbbell", "avg_yaw_dumbbell", "stddev_yaw_dumbbell", "var_yaw_dumbbell", "max_roll_forearm", "max_pitch_forearm", "min_roll_forearm", "min_pitch_forearm", "amplitude_roll_forearm", "amplitude_pitch_forearm", "var_accel_forearm", "avg_roll_forearm", "stddev_roll_forearm", "var_roll_forearm", "avg_pitch_forearm", "stddev_pitch_forearm", "var_pitch_forearm", "avg_yaw_forearm", "stddev_yaw_forearm", "var_yaw_forearm")
+```
+
+After rejecting the above columns, there are ```r length(trainingset) - sum(reject) - 1``` regressors.
+
+Since we are removing some of the columns that do not appear to contain information that could assist in the classification of the activities, if the test data set contain data in those columns that have been removed, out of sample error could occur.
+
+```{r}
+#traininset<-trainingset[,!reject]
+#testingset<-testingset[,!reject]
+```
+
+#Cross validation
+The training set provided contains ```r nrow(trainingset)``` rows. We randomly partition the training set into two sets of ratio 70:30 for training and testing the model respectively. 
+
+```{r}
+set.seed(20150823)
+intraining<-createDataPartition(trainingset$classe, p=0.7, list=FALSE)
+training<-trainingset[intraining,]
+testing<-trainingset[-intraining,]
+c(nrow(training), nrow(testing))
+```
+
+#Building the model
+
+Since this is a classification problem, we build a tree and tested the model using the testing data.
+
+```{r, cache=TRUE}
+fpart<-train(classe ~ ., method='rpart', data=training[,!reject])
+print(fpart$finalModel)
+```
+
+```{r}
+plot(fpart$finalModel, uniform=TRUE, main='Human Activity Classification Tree')
+text(fpart$finalModel, use.n=TRUE, all=TRUE, cex=0.8)
+
+sum(predict(fpart, newdata=testing[,!reject])==testing$classe)/nrow(testing)
+```
+
+The tree could only classify four of the five activities. A better classifier is needed.
+
+A second model using random forest was build. 
+
+```{r cache=TRUE}
+
+frf<-train(classe ~ ., method='rf', data=training[,!reject])
+frf
+```
+
+```{r}
+library(randomForest)
+head(getTree(frf$finalModel, k=1))
+
+correct<-predict(frf, testing[,!reject])==testing$classe
+sum(predict(frf, testing[,!reject])==testing$classe)/nrow(testing)
+```
+
+The new model correctly predicted 99.3% of the test cases.
+
+```{r}
+qplot((testing[,!reject])[,1], (testing[,!reject])[,21], col=correct,xlab=colnames(testing[,!reject])[1], ylab=colnames(testing[,!reject])[21])
+```
+
